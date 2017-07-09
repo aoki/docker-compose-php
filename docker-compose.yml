@@ -1,0 +1,48 @@
+version: '3'
+
+networks:
+  - database
+  - app
+
+services:
+  maria:
+    image: "mariadb:10.2.6"
+    restart: always
+    ports:
+      - 3306:3306
+    environment:
+      - "MYSQL_ROOT_PASSWORD=maria"
+    volumes:
+      - "./data/migrations:/docker-entrypoint-initdb.d"
+      - "./data/maria:/var/lib/mysql"
+    netoworks:
+      - database
+  php:
+    image: "php:7.1.6-fpm-alpine"
+    restart: always
+    ports:
+      - 9000:9000
+    volumes:
+      - "./data/www:/var/www/html"
+      - "./data/php:/usr/local/etc/php/conf.d"
+    links:
+      - maria
+    depends_on:
+      - maria
+    netoworks:
+      - database
+      - app
+  nginx:
+    image: "nginx:1.13.1-alpine"
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - "./data/nginx:/etc/nginx/conf.d"
+    links:
+      - maria
+      - php
+    depends_on:
+      - maria
+      - php
